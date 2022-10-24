@@ -1,4 +1,6 @@
 use crate::engine::{Point, Rect, Renderer};
+use anyhow::{anyhow, Result};
+use wasm_bindgen::JsValue;
 use web_sys::HtmlImageElement;
 
 impl Renderer {
@@ -14,7 +16,7 @@ impl Renderer {
     pub fn draw_image(&self, image: &HtmlImageElement, frame: &Rect, destination: &Rect) {
         self.context
             .draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
-                &image,
+                image,
                 frame.x().into(),
                 frame.y().into(),
                 frame.width.into(),
@@ -33,15 +35,25 @@ impl Renderer {
             .expect("Drawing is throwing exceptions! Unrecoverable error.");
     }
 
-    // pub fn draw_rect(&self, rect: &Rect) {
-    //     self.context.set_stroke_style(&JsValue::from_str("#FF5000"));
-    //     self.context.begin_path();
-    //     self.context.rect(
-    //         rect.x().into(),
-    //         rect.y().into(),
-    //         rect.width.into(),
-    //         rect.height.into(),
-    //     );
-    //     self.context.stroke();
-    // }
+    #[allow(dead_code)]
+    pub fn draw_rect(&self, rect: &Rect) {
+        self.context.set_stroke_style(&JsValue::from_str("#FF5000"));
+        self.context.begin_path();
+        self.context.rect(
+            rect.x().into(),
+            rect.y().into(),
+            rect.width.into(),
+            rect.height.into(),
+        );
+        self.context.stroke();
+    }
+
+    #[allow(dead_code)]
+    pub fn draw_text(&self, text: &str, location: &Point) -> Result<()> {
+        self.context.set_font("16pt serif");
+        self.context
+            .fill_text(text, location.x.into(), location.y.into())
+            .map_err(|err| anyhow!("Error filling text {:#?}", err))?;
+        Ok(())
+    }
 }

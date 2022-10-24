@@ -18,15 +18,21 @@ pub fn prepare_input() -> Result<UnboundedReceiver<KeyPress>> {
     let keyup_sender = Rc::clone(&keydown_sender);
 
     let onkeydown = browser::closure_wrap(Box::new(move |keycode: web_sys::KeyboardEvent| {
-        keydown_sender
+        if let Err(err) = keydown_sender
             .borrow_mut()
-            .start_send(KeyPress::KeyDown(keycode));
+            .start_send(KeyPress::KeyDown(keycode))
+        {
+            error!("Error sending key down {:#?}", err);
+        }
     }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
 
     let onkeyup = browser::closure_wrap(Box::new(move |keycode: web_sys::KeyboardEvent| {
-        keyup_sender
+        if let Err(err) = keyup_sender
             .borrow_mut()
-            .start_send(KeyPress::KeyUp(keycode));
+            .start_send(KeyPress::KeyUp(keycode))
+        {
+            error!("Error sending key up {:#?}", err);
+        }
     }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
 
     browser::window()?.set_onkeydown(Some(onkeydown.as_ref().unchecked_ref()));
@@ -54,7 +60,7 @@ impl KeyState {
     }
 
     fn set_released(&mut self, code: &str) {
-        self.pressed_keys.remove(code.into());
+        self.pressed_keys.remove(code);
     }
 }
 
