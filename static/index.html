@@ -7,11 +7,31 @@
   <link rel="stylesheet" href="styles.css" type="text/css" media="screen">
   <link rel="preload" as="image" href="Button.svg">
   <link rel="preload" as="font" href="kenney_future_narrow-webfont.woff2">
+  <style>
+    div.score {
+      background-color: beige;
+      width: 100px;
+      height: 50px;
+      border: 1px solid black;
+      border-radius: 50%;
+    }
+
+    div.score p {
+      margin: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  </style>
 </head>
 
 <body>
   <script src="index.js"></script>
   <div id="ui">
+    <!-- <div class="score">
+      <p>5</p>
+    </div> -->
     <!-- <button>New Game</button> -->
   </div>
   <canvas id="canvas" tabindex="0" height="600" width="600">
