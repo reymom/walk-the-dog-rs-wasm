@@ -68,10 +68,10 @@ impl RedHatBoy {
         renderer.draw_image(
             &self.image,
             &Rect::new_from_x_y(
-                sprite.frame.x.into(),
-                sprite.frame.y.into(),
-                sprite.frame.w.into(),
-                sprite.frame.h.into(),
+                sprite.frame.x,
+                sprite.frame.y,
+                sprite.frame.w,
+                sprite.frame.h,
             ),
             &self.destination_box(),
         );
@@ -80,10 +80,10 @@ impl RedHatBoy {
     fn destination_box(&self) -> Rect {
         let sprite = self.current_sprite().expect("Cell not found");
         Rect::new_from_x_y(
-            (self.state_machine.context().position.x + sprite.sprite_source_size.x as i16).into(),
-            (self.state_machine.context().position.y + sprite.sprite_source_size.y as i16).into(),
-            sprite.frame.w.into(),
-            sprite.frame.h.into(),
+            self.state_machine.context().position.x + sprite.sprite_source_size.x as i16,
+            self.state_machine.context().position.y + sprite.sprite_source_size.y as i16,
+            sprite.frame.w,
+            sprite.frame.h,
         )
     }
 

@@ -67,12 +67,12 @@ impl RedHatBoyStateMachine {
 
     pub fn context(&self) -> &RedHatBoyContext {
         match self {
-            RedHatBoyStateMachine::Idle(state) => &state.context(),
-            RedHatBoyStateMachine::Running(state) => &state.context(),
-            RedHatBoyStateMachine::Sliding(state) => &state.context(),
-            RedHatBoyStateMachine::Jumping(state) => &state.context(),
-            RedHatBoyStateMachine::Falling(state) => &state.context(),
-            RedHatBoyStateMachine::KnockedOut(state) => &state.context(),
+            RedHatBoyStateMachine::Idle(state) => state.context(),
+            RedHatBoyStateMachine::Running(state) => state.context(),
+            RedHatBoyStateMachine::Sliding(state) => state.context(),
+            RedHatBoyStateMachine::Jumping(state) => state.context(),
+            RedHatBoyStateMachine::Falling(state) => state.context(),
+            RedHatBoyStateMachine::KnockedOut(state) => state.context(),
         }
     }
 
@@ -397,7 +397,7 @@ pub mod red_hat_boy_states {
         pub fn update(mut self) -> JumpingEndState {
             self.update_context(JUMPING_FRAMES);
             if self.context.position.y >= FLOOR {
-                JumpingEndState::Landing(self.land_on(HEIGHT.into()))
+                JumpingEndState::Landing(self.land_on(HEIGHT))
             } else {
                 JumpingEndState::Jumping(self)
             }

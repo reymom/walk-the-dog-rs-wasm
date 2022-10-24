@@ -1,6 +1,6 @@
 use crate::browser;
 use crate::engine;
-use crate::engine::{Audio, Image, KeyState, Point, Rect, Renderer, Sheet, SpriteSheet};
+use crate::engine::{Audio, Image, KeyState, Point, Rect, Renderer, SpriteSheet};
 use crate::game_segments::{Obstacle, RedHatBoy};
 use crate::segments::weird_platform_and_stone;
 use crate::segments::{platform_and_stone, stone_and_platform};
@@ -47,7 +47,7 @@ struct WalkTheDogState<T> {
 }
 struct Ready;
 struct Walking {
-    new_game_event: UnboundedReceiver<()>,
+    // score: UnboundedReceiver<()>,
 }
 struct GameOver {
     new_game_event: UnboundedReceiver<()>,
@@ -63,11 +63,11 @@ impl Walk {
         let starting_obstacles = stone_and_platform(stone.clone(), obstacle_sheet.clone(), 0);
         let timeline = rightmost(&starting_obstacles);
         Walk {
-            boy: boy,
-            backgrounds: backgrounds,
+            boy,
+            backgrounds,
             obstacles: starting_obstacles,
-            obstacle_sheet: obstacle_sheet,
-            stone: stone,
+            obstacle_sheet,
+            stone,
             timeline,
         }
     }
@@ -137,9 +137,9 @@ impl Game for WalkTheDog {
     async fn initialize(&self) -> Result<Box<dyn Game>> {
         match self.machine {
             None => {
-                let sheet = browser::fetch_json("rhb_trimmed.json")
-                    .await?
-                    .into_serde()?;
+                let sheet = browser::fetch_json("rhb_trimmed.json").await?;
+                let sheet = serde_wasm_bindgen::from_value(sheet).unwrap();
+
                 let audio = Audio::new()?;
                 let music = audio.load_sound("background_song.mp3").await?;
                 audio.play_looping_sound(&music, 0.1)?;
@@ -158,8 +158,9 @@ impl Game for WalkTheDog {
                 let stone = engine::image::load_image("Stone.png").await?;
 
                 let tiles = browser::fetch_json("tiles.json").await?;
+                let tiles = serde_wasm_bindgen::from_value(tiles).unwrap();
                 let sprite_sheet = Rc::new(SpriteSheet::new(
-                    tiles.into_serde::<Sheet>()?,
+                    tiles,
                     engine::image::load_image("tiles.png").await?,
                 ));
 
@@ -202,11 +203,11 @@ impl Game for WalkTheDog {
     }
 }
 
-fn rightmost(obstacle_list: &Vec<Box<dyn Obstacle>>) -> i16 {
+fn rightmost(obstacle_list: &[Box<dyn Obstacle>]) -> i16 {
     obstacle_list
         .iter()
         .map(|obstacle| obstacle.right())
-        .max_by(|x, y| x.cmp(&y))
+        .max_by(|x, y| x.cmp(y))
         .unwrap_or(0)
 }
 
@@ -222,6 +223,7 @@ impl WalkTheDogStateMachine {
             WalkTheDogStateMachine::GameOver(state) => state.update().into(),
         }
     }
+
     fn draw(&self, renderer: &Renderer) {
         match self {
             WalkTheDogStateMachine::Ready(state) => state.draw(renderer),
@@ -266,9 +268,14 @@ impl WalkTheDogState<Ready> {
     }
 
     fn start_running(mut self) -> WalkTheDogState<Walking> {
+        //let score = browser::draw_ui("<div class='score' id='score'><p>0</p></div>")
+        //    .and_then(|_unit| browser::find_html_element_by_id("score"))
+        //    .map(|element| engine::button::add_click_handler(element))
+        //    .unwrap();
+
         self.run_right();
         WalkTheDogState {
-            _state: Walking,
+            _state: Walking {},
             walk: self.walk,
         }
     }
@@ -327,7 +334,7 @@ impl WalkTheDogState<Walking> {
     fn end_game(self) -> WalkTheDogState<GameOver> {
         let button = browser::draw_ui("<button id='new_game'>New Game</button>")
             .and_then(|_unit| browser::find_html_element_by_id("new_game"))
-            .map(|element| engine::button::add_click_handler(element))
+            .map(engine::button::add_click_handler)
             .unwrap();
 
         WalkTheDogState {
@@ -354,7 +361,9 @@ impl WalkTheDogState<GameOver> {
     }
 
     fn new_game(self) -> WalkTheDogState<Ready> {
-        browser::hide_ui();
+        if let Err(err) = browser::hide_ui() {
+            error!("Error hiding the browser {:#?}", err);
+        }
         WalkTheDogState {
             _state: Ready,
             walk: Walk::reset(self.walk),
@@ -404,5 +413,73 @@ impl From<WalkTheDogState<Walking>> for WalkTheDogStateMachine {
 impl From<WalkTheDogState<GameOver>> for WalkTheDogStateMachine {
     fn from(state: WalkTheDogState<GameOver>) -> Self {
         WalkTheDogStateMachine::GameOver(state)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::{Sheet, Sound};
+    use futures::channel::mpsc::unbounded;
+    use std::collections::HashMap;
+    use web_sys::{AudioBuffer, AudioBufferOptions};
+
+    use wasm_bindgen_test::wasm_bindgen_test;
+
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+    #[wasm_bindgen_test]
+    fn test_transition_from_game_over_to_new_game() {
+        let (_, receiver) = unbounded();
+        let image = HtmlImageElement::new().unwrap();
+        let audio = Audio::new().unwrap();
+        let options = AudioBufferOptions::new(1, 3000.0);
+        let sound = Sound {
+            buffer: AudioBuffer::new(&options).unwrap(),
+        };
+        let rhb = RedHatBoy::new(
+            Sheet {
+                frames: HashMap::new(),
+            },
+            image.clone(),
+            audio,
+            sound.clone(),
+            sound,
+        );
+        let sprite_sheet = SpriteSheet::new(
+            Sheet {
+                frames: HashMap::new(),
+            },
+            image.clone(),
+        );
+        let walk = Walk {
+            boy: rhb,
+            backgrounds: [
+                Image::new(image.clone(), Point { x: 0, y: 0 }),
+                Image::new(image.clone(), Point { x: 0, y: 0 }),
+            ],
+            obstacles: vec![],
+            obstacle_sheet: Rc::new(sprite_sheet),
+            stone: image.clone(),
+            timeline: 0,
+        };
+
+        let document = browser::document().unwrap();
+        document
+            .body()
+            .unwrap()
+            .insert_adjacent_html("afterbegin", "<div id='ui'></div>")
+            .unwrap();
+        browser::draw_ui("<p>This is the UI</p>").unwrap();
+
+        let state = WalkTheDogState {
+            _state: GameOver {
+                new_game_event: receiver,
+            },
+            walk: walk,
+        };
+
+        state.new_game();
+        let ui = browser::find_html_element_by_id("ui").unwrap();
+        assert_eq!(ui.child_element_count(), 0);
     }
 }
