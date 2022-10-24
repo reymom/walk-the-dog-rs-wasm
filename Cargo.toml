@@ -30,6 +30,7 @@ getrandom = { version = "0.2", features = ["js"] }
 futures = "0.3.23"
 wasm-bindgen-futures = "0.4.32"
 serde = { version = "1.0.143", features = ["derive"] }
+serde-wasm-bindgen = "0.4"
 anyhow = "1.0.62"
 async-trait = "0.1.57"
 js-sys = "0.3.60"
@@ -46,6 +47,7 @@ version = "0.3.59"
 features = [
     "AudioContext",
     "AudioBuffer",
+    "AudioBufferOptions",
     "AudioBufferSourceNode",
     "AudioDestinationNode",
     "console",
