@@ -15,6 +15,18 @@ macro_rules! log {
     };
 }
 
+macro_rules! error {
+    ( $( $t:tt )* ) => {
+        web_sys::console::error_1(&format!( $( $t )*).into());
+    };
+}
+
+macro_rules! panic {
+    ( $( $t:tt )* ) => {
+        web_sys::console::exception_1(&format!( $( $t )*).into());
+    };
+}
+
 pub fn window() -> Result<Window> {
     web_sys::window().ok_or_else(|| anyhow!("no window found :S"))
 }
@@ -159,4 +171,18 @@ pub fn now() -> Result<f64> {
         .performance()
         .ok_or_else(|| anyhow!("Performance object not found"))?
         .now())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::wasm_bindgen_test;
+
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    async fn test_error_loading_json() {
+        let json = fetch_json("not_there.json").await;
+        assert_eq!(json.is_err(), true);
+    }
 }
