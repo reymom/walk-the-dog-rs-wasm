@@ -22,6 +22,6 @@ impl Audio {
     }
 
     pub fn play_looping_sound(&self, sound: &Sound, volume: f32) -> Result<()> {
-        sound::play_sound(&self.context, &sound.buffer, sound::LOOPING::YES, volume)
+        sound::play_sound(&self.context, &sound.buffer, sound::LOOPING::Yes, volume)
     }
 }
