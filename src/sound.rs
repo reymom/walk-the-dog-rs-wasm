@@ -11,7 +11,7 @@ pub async fn decode_audio_data(
     array_buffer: &ArrayBuffer,
 ) -> Result<AudioBuffer> {
     JsFuture::from(
-        ctx.decode_audio_data(&array_buffer)
+        ctx.decode_audio_data(array_buffer)
             .map_err(|err| anyhow!("Could not decode audio from array buffer {:#?}", err))?,
     )
     .await
@@ -40,8 +40,8 @@ fn connect_with_audio_node_js(
     destination: &AudioDestinationNode,
 ) -> Result<AudioNode, JsValue> {
     buffer_source
-        .connect_with_audio_node(&gain)?
-        .connect_with_audio_node(&destination)
+        .connect_with_audio_node(gain)?
+        .connect_with_audio_node(destination)
 }
 
 fn connect_with_audio_node(
@@ -49,7 +49,7 @@ fn connect_with_audio_node(
     gain: &GainNode,
     destination: &AudioDestinationNode,
 ) -> Result<AudioNode> {
-    connect_with_audio_node_js(&buffer_source, &gain, &destination)
+    connect_with_audio_node_js(buffer_source, gain, destination)
         .map_err(|err| anyhow!("Error connecting audio with gain {:#?}", err))
 }
 
@@ -59,7 +59,7 @@ fn create_track_source(
     volume: f32,
 ) -> Result<AudioBufferSourceNode> {
     let track_source = create_buffer_source(ctx)?;
-    track_source.set_buffer(Some(&buffer));
+    track_source.set_buffer(Some(buffer));
     let gain = create_gain(ctx)?;
     connect_with_audio_node(&track_source, &gain, &ctx.destination())?;
     gain.gain().set_value(volume);
@@ -69,7 +69,7 @@ fn create_track_source(
 
 pub enum LOOPING {
     NO,
-    YES,
+    Yes,
 }
 
 pub fn play_sound(
@@ -79,7 +79,7 @@ pub fn play_sound(
     volume: f32,
 ) -> Result<()> {
     let track_source = create_track_source(ctx, buffer, volume)?;
-    if matches!(looping, LOOPING::YES) {
+    if matches!(looping, LOOPING::Yes) {
         track_source.set_loop(true);
     }
     track_source
